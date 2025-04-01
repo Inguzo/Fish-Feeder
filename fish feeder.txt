@@ -1,0 +1,59 @@
+import machine
+import time
+
+# Configuration
+SERVO_PIN = 16  # GPIO pin number where servo is connected | Change it to what is yours
+ROTATION_INTERVAL = 2  # seconds between rotations
+ROTATION_AMOUNT = 4  # degrees to rotate each time
+
+# Create the PWM object for servo control
+pin = machine.Pin(SERVO_PIN)
+pwm = machine.PWM(pin)
+pwm.freq(50)  # 50Hz frequency for servo control
+
+print("Fish Feeder - Starting at 90 degrees and rotating 4 degrees every 2 seconds")
+
+# Constants for servo control
+STOP_PULSE = 1.5  # ms for neutral position (90 degrees)
+CLOCKWISE_PULSE = 1.6  # ms - adjust based on your servo
+TIME_PER_DEGREE = 0.015  # seconds (adjust based on testing)
+
+# Convert pulse width in ms to duty cycle
+def set_pulse_ms(ms):
+    duty = int(65535 * (ms/20.0))
+    pwm.duty_u16(duty)
+
+def rotate_servo(degrees, direction="clockwise"):
+    """
+    Rotate the servo by an approximate number of degrees and then stop.
+    """
+    if direction == "clockwise":
+        set_pulse_ms(CLOCKWISE_PULSE)
+    else:
+        set_pulse_ms(STOP_PULSE)
+    
+    # Wait for the calculated time to achieve desired rotation
+    rotation_time = degrees * TIME_PER_DEGREE
+    time.sleep(rotation_time)
+    
+    # Stop the servo after rotation
+    set_pulse_ms(STOP_PULSE)
+    time.sleep(0.5)  # Ensure it stops properly
+
+# Set initial position to 90 degrees
+set_pulse_ms(STOP_PULSE)
+time.sleep(1)  # Allow servo to stabilize
+
+# Main loop
+while True:
+    start_time = time.ticks_ms()
+    print("Rotating 4 degrees clockwise...")
+    rotate_servo(ROTATION_AMOUNT, "clockwise")
+    
+    elapsed = (time.ticks_ms() - start_time) / 1000  # Convert to seconds
+    remaining = max(0, ROTATION_INTERVAL - elapsed)
+    
+    if remaining > 0:
+        print(f"Waiting {remaining:.2f} seconds until next rotation...")
+        time.sleep(remaining)
+
